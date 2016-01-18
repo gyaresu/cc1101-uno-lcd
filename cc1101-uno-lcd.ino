@@ -19,7 +19,7 @@ uint8_t buttonState = 0;
 uint8_t counter;
 uint8_t b;
 uint8_t syncWord = 0x6d6d;   // sender and reciever must have same!!! like ip address?
-// '0b110110101101101'
+// '0b0110110101101101'
 
 //LCD SCREEN SETUP
 
@@ -112,7 +112,19 @@ void loop()
 
   if (buttonState == HIGH) {
     digitalWrite(ledPin, HIGH);
-    send_data();
+    if (counter == 0){
+      lcd.setCursor(9, 0);
+      lcd.print("           ");
+      lcd.setCursor(9, 1);
+      lcd.print("           ");
+      lcd.setCursor(9, 2);
+      lcd.print("           ");
+      lcd.setCursor(9, 3);
+      lcd.print("           ");
+      send_data();
+    } else {
+      send_data();
+    }
   } else {
     digitalWrite(ledPin, LOW);
   }

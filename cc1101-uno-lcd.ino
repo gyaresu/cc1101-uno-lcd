@@ -10,37 +10,52 @@ LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);  // Set the LCD I
 
 CC1101 cc1101;
 
-// setup the LED & Button
+// LED & Button
 uint8_t buttonPin = 3;
 uint8_t ledPin = 7;
-uint8_t buttonState = 0;
 
+// button states
+uint8_t state = HIGH;
+uint8_t reading;
+uint8_t previous = LOW;
+
+// the follow variables are  uintmax_t because the time, measured in miliseconds,
+// will quickly become a bigger number than can be stored in an int.
+uintmax_t time = 0;
+uintmax_t debounce = 300;
+
+  
 // counter to get increment in each loop
 uint8_t counter;
 uint8_t b;
-uint8_t syncWord = 0x6d6d;   // sender and reciever must have same!!! like ip address?
-// '0b0110110101101101'
-
-//LCD SCREEN SETUP
 
 // SETUP HERE
 void setup()
 {
-  // LED & Button
+  // Assign Button and LED pins
   pinMode(ledPin, OUTPUT);
   pinMode(buttonPin, INPUT);
-
+  
+  // SyncWord
+  uint8_t syncH = 0x06; // 
+  uint8_t syncL = 0xDB;
+  
   Serial.begin(115200);
   lcd.begin(20, 4);  // initialize the lcd for 20 chars 4 lines, turn on backlight
   // reset the counter
-  counter = 253;
+  counter = 0;
 
   // initialize the RF Chip
-  lcd.print("initializing...");
+  lcd.print("SyncH: 0x");
+  lcd.print(syncH, HEX);
+  lcd.setCursor(0, 1);
+  lcd.print("SyncL: 0x");
+  lcd.print(syncL, HEX);
+  delay(2000);
   cc1101.init();
-  cc1101.setSyncWord(&syncWord, false);
+  cc1101.setSyncWord(syncH, syncL, false);
   cc1101.setCarrierFreq(CFREQ_433);
-  cc1101.disableAddressCheck();
+  cc1101.enableAddressCheck();
   //cc1101.setTxPowerAmp(PA_LongDistance);  // if you want HIGH POWER
   cc1101.setTxPowerAmp(PA_LowPower);
   delay(500);
@@ -56,12 +71,17 @@ void send_data()
   cc1101.flushTxFifo ();  // is this needed???
 
   CCPACKET data;
-  data.length = 2;
-  uint8_t fixed = '\xce';
+  data.length = 10;
+  //uint8_t fixed = '\xce';
   uint8_t count = counter++;
 
-  data.data[0] = fixed;
-  data.data[1] = count;
+  //data.data[0] = fixed;
+  //data.data[1] = count;
+
+  for (uint8_t i = 0; i < data.length; i++){
+    data.data[i] = i;
+  }
+
 
   if (cc1101.sendData(data)) {
 
@@ -77,7 +97,7 @@ void send_data()
     */
     
     lcd.setCursor(0, 0);
-    lcd.print("Binary: ");
+    lcd.print("Binary :");
     lcd.setCursor(9, 0);
     lcd.print(count, BIN);
 
@@ -92,15 +112,21 @@ void send_data()
     lcd.setCursor(9, 2);
     lcd.print(count, HEX);
 
+
+    lcd.setCursor(0, 3);
+    lcd.print("Packet :");
+    lcd.setCursor(9, 3);
+    for (uint8_t i = 0; i < data.length; i++){
+      lcd.print(data.data[i], HEX);
+    }
+
     lcd.blink();
     //lcd.scrollDisplayRight();
 
   } else {
     lcd.setCursor(0, 3);
-    lcd.print("  sent failed :(");
+    lcd.print("  send failed :(");
     delay(200);
-    lcd.setCursor(0, 3);
-    lcd.print("                 ");
   }
 }
 
@@ -108,26 +134,19 @@ void send_data()
 
 void loop()
 {
-  buttonState = digitalRead(buttonPin);
+  reading = digitalRead(buttonPin);
 
-  if (buttonState == HIGH) {
-    digitalWrite(ledPin, HIGH);
-    if (counter == 0){
-      lcd.setCursor(9, 0);
-      lcd.print("           ");
-      lcd.setCursor(9, 1);
-      lcd.print("           ");
-      lcd.setCursor(9, 2);
-      lcd.print("           ");
-      lcd.setCursor(9, 3);
-      lcd.print("           ");
-      send_data();
-    } else {
-      send_data();
-    }
-  } else {
-    digitalWrite(ledPin, LOW);
+  if (reading == HIGH && previous == LOW && millis() - time > debounce) {
+    if (state == HIGH)
+      state = LOW;
+    else
+      state = HIGH;
+
+    time = millis();
   }
 
-  delay(100);
+  if (state)
+    send_data();
+    
+  delay(200);
 }

@@ -83,11 +83,11 @@ void send_data()
   cc1101.writeReg(CC1101_MDMCFG3, 0x22); // Register 0x11 set to 115200 Baud
   uint8_t count = counter++;
 
-  data.data[0] = '@';
-  data.data[1] = 'b';
-  data.data[2] = 'c';
-  data.data[3] = 'x';
-  data.data[4] = 'y';
+  data.data[0] = 0xaa;
+  data.data[1] = 0xaa;
+  data.data[2] = 0xaa;
+  data.data[3] = 0xaa;
+  data.data[4] = 0xaa;
   
 
 /*
@@ -102,7 +102,8 @@ void send_data()
 
     // LED ON
     digitalWrite(ledPin, HIGH);
-  
+
+  /*
     lcd.setCursor(0, 0);
     lcd.print("Binary :");
     lcd.setCursor(9, 0);
@@ -112,8 +113,12 @@ void send_data()
     lcd.print("Decimal:");
     lcd.setCursor(9, 1);
     lcd.print(count, DEC);
+    */
 
-
+    lcd.setCursor(0,0);
+    lcd.print("PKTLEN:");
+    lcd.print(' ');
+    lcd.print(cc1101.readReg(0x06, CC1101_CONFIG_REGISTER), DEC);
     lcd.setCursor(0, 2);
     lcd.print("DR:");
     lcd.setCursor(3, 2);
@@ -121,6 +126,9 @@ void send_data()
     lcd.print(' ');
     lcd.print("PL:");
     lcd.print(data.length, HEX);
+    lcd.print(' ');
+    lcd.print("0x08:");
+    lcd.print(cc1101.readReg(0x08, CC1101_STATUS_REGISTER), HEX);
     lcd.setCursor(0, 3);
     lcd.print(data.data[0], HEX);
     lcd.print(' ');

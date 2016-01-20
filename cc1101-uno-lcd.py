@@ -22,7 +22,7 @@ d.setMdmSyncWord(0xEEEE)
 d.setMdmNumPreamble(0)
 d.setMdmDRate(115200)
 d.setMaxPower()
-d.makePktFLEN(5)
+d.makePktFLEN(255)
 
 while not keystop():
     try:
